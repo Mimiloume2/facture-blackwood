@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Facture Blackwood</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+  <input type="text" id="client" value="John Doe"/>
+  <input type="date" id="date" value="2025-04-29"/>
+  <input type="text" id="facture" value="BW-001"/>
+  <input type="text" id="compte" value="Blackwood Saloon"/>
+  <input type="text" id="iban" value="20075"/>
+  <input type="text" id="subtotal" value="100" />
+  <input type="text" id="tva" value="20" />
+  <input type="text" id="taux-tva" value="20" />
+  <input type="text" id="reduction" value="10" />
+  <input type="text" id="total" value="110" />
+  <select id="reduction-type"><option value="montant" selected>Montant</option></select>
+  <textarea id="remarques">Merci pour votre fidélité</textarea>
+  <input type="checkbox" id="paye" checked />
+  <table id="table-body"><tr><td>Test</td><td class="unit-price">50</td><td><input value="2"></td><td class="line-total">100</td></tr></table>
+  <button onclick="generatePDF()">Télécharger</button>
+  <button onclick="resetForm()">Réinitialiser</button>
+
+<script>
+function formatDateFR(dateStr) {
+  const [y, m, d] = dateStr.split("-");
+  return d + "/" + m + "/" + y;
+}
+async function generatePDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  const img = new Image();
+  img.src = "logo.png";
+  await new Promise(r => img.onload = () => (doc.addImage(img, 'PNG', 80, 10, 50, 50), r()));
+  let y = 65;
+  doc.setFontSize(18).setFont('helvetica', 'bold');
+  doc.text('FACTURE', 105, y, { align: 'center' });
+  y += 10;
+  doc.setFontSize(12).setFont('helvetica', 'normal');
+  doc.text(`Facture N° : ${document.getElementById("facture").value}`, 14, y);
+  doc.text(`Date : ${formatDateFR(document.getElementById("date").value)}`, 150, y);
+  y += 10;
+  doc.text(`DÉLIVRÉ À : ${document.getElementById("client").value}`, 14, y);
+  y += 10;
+  doc.line(14, y, 196, y); y += 6;
+  doc.setFont('helvetica', 'bold');
+  doc.text('DESCRIPTION', 14, y);
+  doc.text('PRIX UNITAIRE', 105, y);
+  doc.text('QTÉ', 150, y);
+  doc.text('TOTAL', 180, y);
+  doc.setFont('helvetica', 'normal');
+  y += 6;
+  document.querySelectorAll("#table-body tr").forEach(row => {
+    const name = row.cells[0].textContent;
+    const price = row.cells[1].textContent;
+    const qty = row.querySelector("input").value;
+    const total = row.cells[3].textContent;
+    if (parseInt(qty) > 0) {
+      doc.text(name, 14, y);
+      doc.text(`${price} $`, 105, y, { align: 'right' });
+      doc.text(qty, 150, y, { align: 'right' });
+      doc.text(`${total} $`, 180, y, { align: 'right' });
+      y += 6;
+    }
+  });
+  y += 4;
+  doc.line(14, y, 196, y); y += 8;
+  const s = document.getElementById.bind(document);
+  const subtotal = s("subtotal").value;
+  const tva = s("tva").value;
+  const tvaRate = s("taux-tva").value;
+  const reductionValue = s("reduction").value;
+  const reductionType = s("reduction-type").value;
+  const totalTTC = s("total").value;
+  doc.text(`SOUS-TOTAL : ${subtotal} $`, 196, y, { align: 'right' }); y += 6;
+  doc.text(`TVA (${tvaRate}%) : ${tva} $`, 196, y, { align: 'right' }); y += 6;
+  doc.text(`REMISE : -${reductionValue} $`, 196, y, { align: 'right' }); y += 6;
+  doc.setFont('helvetica', 'bold');
+  doc.text(`TOTAL TTC : ${totalTTC} $`, 196, y, { align: 'right' });
+  doc.setFont('helvetica', 'normal');
+  y += 10;
+  const remarques = s("remarques").value.trim();
+  if (remarques) { doc.text('Remarques :', 14, y); y += 6; doc.text(remarques, 14, y, { maxWidth: 180 }); y += 10; }
+  if (s("paye").checked) { doc.setTextColor(0, 153, 0); doc.setFont('helvetica', 'bold'); doc.text("FACTURE PAYÉE ✅", 14, y); doc.setTextColor(0, 0, 0); y += 8; }
+  y += 6;
+  doc.setFontSize(10);
+  doc.text("COORDONNÉES BANCAIRES", 14, y); y += 5;
+  doc.text(`Nom du Compte : ${s("compte").value}`, 14, y); y += 5;
+  doc.text(`Numéro de Compte : ${s("iban").value}`, 14, y);
+  doc.save("facture_blackwood.pdf");
+}
+function resetForm() {
+  document.getElementById("client").value = "";
+  document.getElementById("date").valueAsDate = new Date();
+  document.getElementById("facture").value = "";
+  document.getElementById("compte").value = "Blackwood Saloon";
+  document.getElementById("iban").value = "20075";
+  document.getElementById("subtotal").value = "0";
+  document.getElementById("tva").value = "0";
+  document.getElementById("taux-tva").value = "0";
+  document.getElementById("reduction").value = "0";
+  document.getElementById("total").value = "0";
+  document.getElementById("remarques").value = "";
+  document.getElementById("paye").checked = false;
+  const inputs = document.querySelectorAll("#table-body input");
+  inputs.forEach(input => input.value = "0");
+}
+</script>
+</body>
+</html>
